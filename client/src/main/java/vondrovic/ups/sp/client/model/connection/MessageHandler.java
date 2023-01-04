@@ -627,6 +627,13 @@ public class MessageHandler {
             return;
         }
 
+        if(message[0].equalsIgnoreCase("logout_ok")) {
+            this.invalidMessages = 0;
+            receive_msg = true;
+
+            return;
+        }
+
         if (!receive_msg)
         {
             AlertFactory.sendErrorMessageOutside("Message error", "Received invalid message. Probably connected to the wrong server.");

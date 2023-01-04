@@ -20,7 +20,7 @@ public class ConnectionModel {
      */
     public ConnectionModel(String address, int port) throws IOException {
         socket = new Socket(address, port);
-        socket.setSoTimeout(2000); // waiting max 2s for first message
+        socket.setSoTimeout(5000); // waiting max 5s message
         printWriter = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
         this.bufferedReader = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));
     }

@@ -303,9 +303,11 @@
 	\end{itemize}
 	\par Výsledné hodnoty parametrů se vypíšou do konzole.
 	
-
 	\subsection{Překlad a spuštění klienta}
-	\par Program se přeloží pomocí příkazu \texttt{./mvn clean install}. Následně se musí přejít do vytvořené složky target, kde se nachází spustitelný soubor \texttt{client-2-jar-with-dependencies.jar}. Soubor lze spustit dvojím pokliknutím nebo příkazem \\ \texttt{java -jar client-2-jar-with-dependencies.jar}.
+	\par Pro překlad a spuštění klienta je třeba mít k dispozici \texttt{maven}. Program se přeloží pomocí příkazu \texttt{mvn clean install}. Následně se musí přejít do vytvořené složky target, kde se nachází spustitelný soubor \texttt{client-2-jar-with-dependencies.jar}. Soubor lze spustit dvojím pokliknutím nebo příkazem \\ \texttt{java -jar client-2-jar-with-dependencies.jar}.
+	
+	\par Na systému ubuntu nemusí uvedený příkaz fungovat, z důvodu, že okenní manažer Wayland nemusí být ve verzi, v níž funguje knihovna \texttt{JavaFx}. V tom případě, lze aplikaci spustit příkazem:\\
+	\texttt{java -Djdk.gtk.version=2 -jar client-2-jar-with-dependencies.jar}
 	\section{Závěr}
 	\par Server a klient spolu komunikují na popsaném protokolu a je přes něj realizovaná síťová hra. Program ošetřuje nevalidní zprávy, reaguje na výpadky a běží stabilně. Požadavky na práci jsou splněny.
 	

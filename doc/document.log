@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 21.12.10) (preloaded format=pdflatex 2022.1.27)  4 JAN 2023 11:52
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (MiKTeX 21.12.10) (preloaded format=pdflatex 2022.1.27)  4 JAN 2023 14:24
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -953,12 +953,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 297--298
 
  []
 
-
-Overfull \hbox (40.28613pt too wide) in paragraph at lines 308--309
-\IL2/cmr/m/n/12 tvoøené slo¾ky tar-get, kde se na-chází spus-ti-telný sou-bor \
-IL2/cmtt/m/n/12 client-2-jar-with-dependencies.jar\IL2/cmr/m/n/12 .
- []
-
 [9] [10] (document.aux)
 Package rerunfilecheck Info: File `document.out' has not changed.
 (rerunfilecheck)             Checksum: 4D6634BFCB1375989087D6627D90BB21;5888.
@@ -982,9 +976,9 @@ our/public/csfonts/dpi864\csbx12.pk> <C:\Users\vondr\AppData\Local\MiKTeX\fonts
 MiKTeX\fonts/pk/ljfour/public/csfonts/dpi1244\csbx12.pk><D:/programfiles/miktex
 /miktex/fonts/type1/public/amsfonts/cm/cmr12.pfb><D:/programfiles/miktex/miktex
 /fonts/type1/public/amsfonts/cm/cmsy10.pfb>
-Output written on document.pdf (10 pages, 189404 bytes).
+Output written on document.pdf (10 pages, 191289 bytes).
 PDF statistics:
- 609 PDF objects out of 1000 (max. 8388607)
+ 614 PDF objects out of 1000 (max. 8388607)
  66 named destinations out of 1000 (max. 500000)
  338 words of extra memory for PDF output out of 10000 (max. 10000000)
 

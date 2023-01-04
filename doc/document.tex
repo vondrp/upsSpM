@@ -1,0 +1,312 @@
+\documentclass[12pt, a4paper]{article} % report, article, book, letter, beamer
+\usepackage{graphicx}
+\graphicspath{images/}
+\usepackage[margin=1in]{geometry}
+\usepackage{tabularx}
+\usepackage{lscape}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage[utf8]{inputenc}
+\usepackage[IL2]{fontenc}
+\usepackage[czech]{babel}
+\usepackage{pdfpages}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage[ddmmyyyy]{datetime}
+\renewcommand{\dateseparator}{. }
+
+\usepackage{enumitem}
+
+\newlist{notes}{enumerate}{1}
+\setlist[notes]{label=Poznámka: ,leftmargin=*}
+
+\begin{document}
+	\begin{titlepage}
+		\begin{figure}[H]
+			\includegraphics[width=6cm]{images/FAV_cmyk.eps}
+		\end{figure}
+		\vspace{3cm}
+		\begin{center}
+			\huge{\textbf{Síťová hra - Lodě}} \\
+			\Large KIV/UPS - Semestrální práce
+		\end{center}
+		\vfill
+		\begin{table}[H]
+			\begin{tabular}{l l}
+				student: & Petr Vondrovic\\
+				studijní číslo: & A20B0273P\\
+				email: & vondrp@students.zcu.cz\\
+				datum: & \today
+			\end{tabular}
+		\end{table}
+	\end{titlepage}
+	\pagebreak
+	\setcounter{page}{2}
+	\section{Pravidla hry}
+	\par Lodě, popřípadě Námořní bitva je hra pro dva hráče, ve které je cílem potom všechny lodě soupeře. Oba hráči mají vlastní herní pole o velikosti 10x10 na němž jsou rozmístěny jejich lodě různých velikostí.
+	
+	\par Lodě mohou být rozmístění pouze vodorovně nebo horizontálně. Je tedy vyloučeno umístění úhlopříčné nebo jinak šikmé. Lodě se navzájem nesmí překrývat a vzájemně se dotýkat a to ani rohem. Během hry se pozice lodí nemění.
+	
+	
+	\par Při hře se účastnící střídají ve  „střelbě“ na jednotlivá pole protivníka, který oznámí zda došlo nebo nedošlo k zásahu, popřípadě zda byla loď zásahem potopena. Byla-li loď potopena je její okolí označeno jako minutí.
+	
+	\par Hra končí, když jeden z hráčů přijde o celou flotilu.
+		
+	\section{Implementace programu}
+	\par Kromě implementace hry podle specifikovaných pravidel obsahuje hra systém místností. Místnost vytvoří jeden z hráčů a jakmile se k němu připojí protivník hra započne. Každá místnosti má své identifikační číslo a hráči mohou získat jejich seznam, který obsahuje jména hráčů v místnosti.
+		
+	\par Dojde-li ke ztrátě spojení nebo odpojení se, je stav hry a klienta stále k dispozici a uživatel se může připojit zpět.
+
+	\section{Komunikační protokol}
+	\par Komunikační protokol je nešifrovaný a textový. Je tak zajištěna jeho srozumitelnost pro vývoj, testování a kontrolu. Zprávy jsou dělené na 4 druhy a to žádosti, potvrzovací, datové a chybové. Žádosti odesílá klient a přijíma server, zatímco u ostatních typů zpráv je to naopak. Zprávy protokolu využívají k dělení jednotlivých parametrů zpráv středník (;). Každá zpráva je na samostatném řádku, jsou tedy zakončené znakem ($\backslash$n);
+	
+	\subsection{Stav uživatele}
+	\par Klient se může nacházet v jednom z několika stavů. Na základě stavu se odvozeno, které akce mohou být prováděny.
+	
+	\par Seznam stavů:
+	\begin{itemize}
+		\item 0 - Nepřihlášený
+		\item 1 - V lobby
+		\item 2 - V místnosti
+		\item 3 - Ve hře - připravuje hrací plochu
+		\item 4 - Ve hře - čeká
+		\item 5 - Ve hře - na tahu		
+	\end{itemize}
+	\par Na serveru se nachází ještě dva bonusové stavy - CONNECTED a DISCONNECTED, které sledují zda je klient připojený. Stavy přechází pouze mezi sebou
+
+	\subsection{Stavový diagram}
+	\label{ssec:states}
+	\par Všechny stavy se mohou dostat do nepřipojeného/nepřihlášeného stavu a po připojení zpět se vrátit.
+	\begin{figure}[H]
+		\centering
+		\begin{tikzpicture}[node distance={25mm}, thick, main/.style = {draw, circle}]
+			\node[main] (0) {$0$}; 
+			\node[main] (1) [above right of=0] {$1$};
+			\node[main] (2) [below right of=0] {$2$}; 
+			\node[main] (3) [below of=2] {$3$};
+			\node[main] (4) [right of=3] {$4$};
+			\node[main] (5) [right of=1] {$5$}; 
+
+			
+			\draw[->] (0) to node[midway, above, sloped, pos=0.5] {LOGIN} (1);
+			\draw[->] (1) to node[midway, above, sloped, pos=0.5] {JOIN} (2);
+			\draw[->] (2) to node[midway, below, sloped, pos=0.5] {PREPARE} (3);
+			
+			\draw[->] (3) to node[midway, above, sloped, pos=0.5] {START} (4);
+			\draw[->] (3) to node[midway, below, sloped, pos=0.7] {START FIRST} (5);
+			
+			\draw[->] (5) to node[midway, above, sloped, pos=0.5] {END} (1);
+			\draw[->] (4) to node[midway, above, sloped, pos=0.8] {END} (1);
+			
+			\draw[->] (5) to node[midway, above, sloped, pos=0.5] {TAH} (4);
+			\draw[->] (4) to [out=0,in=0,looseness=1.0] node[midway, above, sloped, pos=0.5] {TAH} (5);
+		\end{tikzpicture}
+		\caption{Stavový diagram} 
+	\end{figure}
+	\subsection{Chybové kódy}
+	\label{ssec:error_codes}
+	\begin{enumerate}
+		\item Interní chyba
+		\item Špatný formát zprávy
+		\item Špatný formát uživatelského jména
+		\item Uživatelské jméno je zabrané
+		\item Neplatný stav uživatele
+		\item Místnost je plná
+		\item Místnost je nedostupná (nebyla nalezena)
+		\item Mimo rozsah herního plánu
+		\item Už zasažené pole
+		\item Neplatné umístění lodě
+		\item Neplatný identifikátor lodě
+		\item Vyčerpaná kapacita serveru
+		\item Neplatná délka lodí
+	\end{enumerate}
+	\subsection{Skupiny zpráv}
+	\par U všech zpráv s vyjímkou navázání spojení může server potvrdit správnost příkazu nebo ohlásit chybu.
+	\subsubsection{Navázání spojení}
+	\par \uv{connected} zpráva serveru zaslaná při úspěšném navázání spojení klienta se serverem.\\
+	\textbf{Zpráva serveru:}\\
+	\texttt{connected}
+	\subsubsection{Připojení}
+	\par Po navázání spojení se klient může přihlásit příkazem \uv{login\_req;(name)}. Na základě stavu se hráč připojí buď do lobi nebo hry/místnosti z níž odešel (při spadnutí klienta). Uživatelské jméno nesmí být delší než 19 znaků a může obsahovat pouze písmena malé, velké abecedy a číslice.
+	\par Pokud připojení selže je serverem ukončeno spojení s klientem.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{login\_req;(name)}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{login\_ok;(name);(state)}\\
+	\texttt{login\_err;(error\_code)}\\\\
+	\texttt{(name)} - jméno, kterým se klient přihlašuje\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	\subsubsection{Vytvoření místnosti}
+	\par Žádost o vytvoření místnosti se provádí pomocí zprávy \uv{room\_create\_req}.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{room\_create\_req}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{room\_create\_ok}\\
+	\texttt{room\_create\_err;(error\_code)}\\\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	\subsubsection{Seznam místností}
+	\par Pro připojení do místnosti je třeba získat její identifikační číslo na nějž se klient ptá příkazem \uv{room\_list\_req} a je mu odpovězeno zprávou \uv{room\_list\_data;(id1);(name1);…} za níž se nachází dvojice identifikátoru místnosti a hráče, který v ní čeká.\\	
+	\textbf{Požadavek klienta:}\\
+	\texttt{room\_list\_req}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{room\_list\_data;(id1);(name1);(id2);(name2)...}\\
+	\texttt{room\_list\_err|(error\_code)}\\\\
+	\texttt{(idX)} - identifikátor místnosti - nezáporné celé číslo\\
+	\texttt{(nameX)} - jméno uživatele, který je aktuálně v místnosti\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	\subsubsection{Připojení do místnosti}
+	\par S identifikátorem místnosti se klient může přihlásit příkazem \uv{room\_join\_req;(room\_id)}. Povedlo-li se připojení dostanu klient zprávu s jménem protivníka \uv{room\_join\_ok;(opp\_name)}.  Hráč čekající v místnosti dostane zprávu s jménem připojeného uživatele \uv{room\_join\_opp;(name)}.\\	
+	\textbf{Požadavek klienta:}\\
+	\texttt{room\_join\_req;(id)}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{room\_join\_ok;(opp\_name)}\\
+	\texttt{room\_join\_err;(error\_code)}\\
+	\textbf{Zprávy protihráči:}\\
+	\texttt{room\_join\_opp;(name)}\\\\
+	\texttt{(id)} - identifikátor místnosti - nezáporné celé číslo\\
+	\texttt{(opp\_name)} - jméno protihráče, který je v místnosti\\
+	\texttt{(name)} - jméno připojujícího protihráče\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	\subsubsection{Odejít z místnosti}
+	\par Ze hry/místnosti se odchází příkazem \uv{room\_leave\_req}. Oponent, dostane zprávu o odpojení protihráče \uv{room\_leave\_opp}. Odešel-li hráč během hry, hra skončí.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{room\_leave\_req}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{room\_leave\_ok}\\
+	\texttt{room\_leave\_err;(error\_code)}\\
+	\textbf{Zprávy protihráči:}\\
+	\texttt{room\_leave\_opp;(name)}\\\\
+	\texttt{(name)} - jméno odpojeného protihráče\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	\subsubsection{Vstup do hry}
+	\par Po té co se do místnosti připojí oba hráči dostanou od serveru zprávu \uv{game\_conn}. Tato zpráva značí, že oba hráči nyní přejdou do fáze přípravy hry.\\
+	\textbf{Zpráva serveru:}\\
+	\texttt{game\_conn}
+	\subsubsection{Herní plocha připravena}
+	\label{ssec:game_ready}
+	\par Pro vstupu do hry hráči rozmístí své lodě a pošlou svou hrací plochu. Plocha je ve formě řetězce tvořen dvěma typy znaků – E (prázdno) a číslice v rozsahu 0 až 6 jakožto symboly jednotlivých lodí. Příkaz je \uv{game\_prepared;(EEE0000EEE…)}.
+	\par Lodě mají pevně stanovenou délku - loď 0 je dlouha 4 políčka, 1 a 2 mají délku 3, 3, 4 a 5 délka 2 a lod s indexem 6 má délku 1.
+	\par Po připravení hracích polí obou hráčů dostane jeden z nich zprávu \uv{game\_play} značící začátek hry.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{game\_prepared;(EEE0000EEE…)}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{game\_prepared\_ok}\\
+	\texttt{game\_prepared\_err;(error\_code)}\\
+	\texttt{game\_play}\\\\
+	\texttt{(name)} - jméno odpojeného protihráče\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+		
+	\begin{notes}
+		\item Informace o lodí jsou zaslány v podobě jejich identifikátorů, protože ten pomáhá serveru a klientovi označit okolí lodě při jejím zničení.
+	\end{notes}	
+	\subsubsection{Střelba}
+	\par Příkaz vystřelit na danou pozici \uv{game\_fire\_req;(x);(y)}. Bylo-li vystřeleno na pozici v platném rozsahu, která ještě zasažena nebyla, dostane klient od serveru zprávu\\ \uv{game\_fire\_ok;(x),(y),(status);(ship\_destroyed)} informující o stavu zasažené pozice a zničení lodě. Při úspěchu dostane protihráč informaci o zasaženém poli\\ \uv{game\_opp\_fire;(x);(y);(status);(ship\_destroyed)}.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{game\_fire\_req;(x);(y)}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{game\_fire\_ok;(x),(y),(status);(ship\_destroyed)}\\
+	\texttt{game\_fire\_err;(error\_code)}\\
+	\textbf{Zprávy protihráči:}\\
+	\texttt{game\_opp\_fire;(x);(y);(status);(ship\_destroyed)}\\\\
+	\texttt{(x);(y)} - x-ová a  y-ová souřadnice \\
+	\texttt{(status)} - stav zasaženého pole - H (loď zasažena), M (minul)\\
+	\texttt{(ship\_destroyed) - 0 - loď žije, 1 - loď zničena}\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	\subsubsection{Informace o hře}
+	\par Pro znovu připojení nebo synchronizace může klient vyslat žádost o data.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{game\_info\_req}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{game\_info\_data;(client\_status);(client\_board);(opp\_name);(opp\_board)}\\
+	\texttt{game\_info\_err|(error\_code)}\\\\
+	\texttt{(client\_status)} - status klienta (viz. \nameref{ssec:states})\\
+	\texttt{(opp\_name)} - jméno protihráče\\
+	\texttt{(client\_board)} - řetězcová reprezentace klientova hracího plánu. Obsahuje symboly \texttt{E} - prázdné pole, \texttt{H} - zasažená loď, \texttt{M} - zasažené prázdné pole a číslice od \texttt{0} do \texttt{6} symbolující jednotlivé lodě.\\\\\\
+	\texttt{(opp\_board)} - řetězcová reprezentace protivního hracího plánu. Obsahuje symboly \texttt{E} - prázdné pole, \texttt{H} - zasažená loď a \texttt{M} - zasažené prázdné pole.\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	
+	\subsubsection{Ukončení hry}
+	\par Zprávu zasílá server klientům s parametrem jména vítěze.\\
+	\textbf{Zpráva serveru:}\\
+	\texttt{game\_end;(winner\_name)}\\
+	\texttt{winner\_name} - jméno vítěze
+	\subsubsection{Odpojení}
+	\par Příkaz s žádostí o odpojení od serveru je \uv{logout\_req}. Server odpoví buď s \uv{logout\_ok}, případně s chybou \uv{logout\_err;(error\_code)}.\\
+	\textbf{Požadavek klienta:}\\
+	\texttt{logout\_req}\\
+	\textbf{Možné odpovědi serveru:}\\
+	\texttt{logout\_ok}\\
+	\texttt{logout\_err;(error\_code)}\\
+	\textbf{Zprávy protihráči:}\\
+	\texttt{room\_leave\_opp;(name)}\\\\
+	\texttt{(name)} - jméno odpojeného spoluhráče\\
+	\texttt{(error\_code)} - identifikační číslo chyby (viz. \nameref{ssec:error_codes})
+	
+	\section{Implementace serveru}
+	\par Server je implementovaný v programovacím jazyce C. Pro realizace paralelního serveru je použita funkce \texttt{select}, zbytek serveru je realizován v jednom vlákně. Server je tvořen strukturama pro jednotlivá připojení a data ukládá do datových struktur. Například jednolitvé místnosti/hry mají přiřazené identifikátor, kterým jsou rychle získatelné z array listu. Uživatelé jsou ukládány v hashmapě, kde je lze rychle vyhledat pomocí jejich jména.
+	
+	\par Informace o činnostech serveru jsou zasílána na výstup a do souboru \texttt{trace.log} se ukládají trasovací informace. Po ukončení serveru za pomocí signalu (např. CTRL + C) je vytvořen soubor \texttt{stats.txt}, kde jsou uloženy statistické údaje o činnosti serveru.
+
+	\subsection{Popis složek a jednotlivých souborů}
+	\subsubsection{main.c/h}
+	\par Soubor funkcí se stará o vstup do programu inicializaci základních struktur, a procesování jednotlivých zpráv.
+	\subsubsection{Složka structures}
+	\par Ve složce se nachází výše zmíněné datové struktury array listu a hashmapy.
+	\subsubsection{Složka game}
+	\par Ve složce game se nachází soubory \texttt{ship.c/h} a \texttt{shipsGame.c/h}. Ty slouží jakožto modely lodí a hry/místnosti a funkce sloužící k jejich nastavení.
+	\subsubsection{Složka communication}
+	\par Složka obsahuje soubory starající se o obsluhu připojení.\\
+	\par \texttt{server.c/h} se stará o udržování informací napříč dalšími funkcemi,  obsluhuje nová připojení a odpojuje ty ukončující.
+	\par Soubor \texttt{client.c/h} obstarává nastavení klienta.
+	\par \texttt{commands.c/h} obsahuje seznam všech očekávajících příchozích zpráv a jejich obsluhu.
+	\par V souboru \texttt{errors.h} se nachází přehled definovaných chybových stavů.	
+	
+	\section{Implementace klienta}
+	\par Klient je implementovaný v jazyce Java ve verzi 11, s použitím grafické knihovny JavaFX.
+	\subsection{Rozdělení}
+	\par Aplikace je implementovaná pomocí MVC modelu (model, view, controller). 
+	View vrstva se nachází ve složce resources a skládá se z fxml souborů jednotlivých oken aplikace. Ve vztahu 1 ku 1  se ve složce controller se nachází kontrolery oken, které se starají o propojení pohledů s modely.\\
+	
+	\subsection{Nejdůležitější části modelu připojení}	
+	\subsubsection{Reciever}
+	\par Třída reprezentuje samostatné vlákno, uzavřené v nekonečné smyčce. Vlákno přijímá zprávy ze serveru. A posílá je na zpracování třídě \texttt{MessageHandler}.
+	
+	\subsubsection{MessageHandler}
+	\par Instance třídy obsluhuje jednotlivé možné zprávy ze serveru a vykonává jejich obslužné akce. Pokud počet po sobě jdoucích zpráv, které neodpovídají žádné zprávě, překročí nastavenou mez, klient se od serveru odpojí.
+	
+	
+	\subsection{Nejdůležitější části modelud hry}
+	\subsubsection{GameModel}
+	\par Obsahuje data herních ploch, informaci o vítězi a současný stav hry. Nachází se zde metody sloužící k inicializaci herních plánů, rozmístění lodí a obstarání  zasažení pole herního plánu.
+	
+	\subsubsection{GameBoard}
+	\par Grafická reprezentace herního plánu zobrazující data z \texttt{GameModel}.
+	\subsection{Hlavní}
+	\subsubsection{App}
+	\par Třída reprezentující grafickou aplikaci. Jedná se o třídu s návrhovým vzorem jedináček, jejíž  instance shlukuje odkazy na jednotlivé moduly aplikace. Třída je volána spouštěcí třídou \texttt{Main}.
+	
+	\section{Uživatelská dokumentace}
+	\subsection{Překlad serveru}
+	\par Pro překlad serveru je potřeba nástroj \texttt{cmake}, \texttt{make} a překladač \texttt{gcc}. Nejprve vygenerujeme soubor makefile zadáním příkazu \texttt{cmake -B ./build/}. Přejdeme do adresáře \texttt{build} příkazem \texttt{cd build} a v něm spustíme překlad programu příkazem \texttt{make}. Po dokončení operace by měl být vytvořen v adresáři \texttt{build} soubor \texttt{server}. 
+	\subsection{Spuštění serveru}
+	\par Pro překladu programu se vyskytujeme v adresáři \texttt{/server/}. Pro build aplikace je používán nástroj CMake, jenž vytvoří příslušný Makefile.\\
+	\par Použijeme tedy příkaz: \texttt{cmake -B ./build/}\\
+	\par Přemístíme se do adresáře \texttt{build/} (\texttt{cd build}) a provedeme sestavení spustitelného souboru příkazem \texttt{make}, který vytvoří spustitelný soubor \texttt{server}.
+	\par Pro spuštění serveru potřebujeme znát číslo portu služby, například \texttt{9123}. Server s tímto portem spustíme příkazem:
+	\texttt{./server -p 9123} nebo \texttt{./server --port 9123}\\
+	\par V případě kdy uvedeme neplatnou hodnotu portu - tedy nečíselnou hodnotu, číslo menší než \texttt{1} nebo větší než texttt{65535} dojde k nastavení defaultní hodnoty portu \texttt{9123}\\
+	\par Program můžeme spusti i s několika nepovinnými parametry:
+	\begin{itemize}
+		\item Maximální počet místností: \texttt{-r 15} nebo \texttt{--rooms 15}  (defaultní hodnota 10)
+		\item Maximální počet uživatelů: \texttt{-pl 30} nebo \texttt{--players 30} (defaultní hodnota 20)
+		\item IP adresa: \texttt{-ip 127.0.5.5} - bez defaultní hodnoty - server sdělí zda povedlo s danou IP adresou spustit
+	\end{itemize}
+	\par Výsledné hodnoty parametrů se vypíšou do konzole.
+	
+
+	\subsection{Překlad a spuštění klienta}
+	\par Program se přeloží pomocí příkazu \texttt{./mvn clean install}. Následně se musí přejít do vytvořené složky target, kde se nachází spustitelný soubor \texttt{client-2-jar-with-dependencies.jar}. Soubor lze spustit dvojím pokliknutím nebo příkazem \\ \texttt{java -jar client-2-jar-with-dependencies.jar}.
+	\section{Závěr}
+	\par Server a klient spolu komunikují na popsaném protokolu a je přes něj realizovaná síťová hra. Program ošetřuje nevalidní zprávy, reaguje na výpadky a běží stabilně. Požadavky na práci jsou splněny.
+	
+\end{document}
